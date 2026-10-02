@@ -11,12 +11,16 @@
 //! live under `testdata/o8l_core_ext/`: `silence.rb` proves the fix (no
 //! diagnostics), `control.rb` proves the allowlist is narrow (a
 //! genuinely unknown bare/receiver call still warns). Mechanism:
-//! `core::ACTIVE_SUPPORT_OBJECT_MIXIN_METHODS` (the four `core_ext` names)
+//! `core::ACTIVE_SUPPORT_OBJECT_MIXIN_METHODS` (the curated `core_ext` names)
 //! and an added `"gem"` entry in `core::KERNEL_PRIVATE_INSTANCE_METHODS`,
 //! both consulted by `core::kernel_object_instance_method` -- same
 //! fallback path bead ita-yxc already wired for public-gem Kernel DSL
 //! (`crates/itaruby_semantic/tests/gem_kernel_dsl.rs`), no
 //! `index.rs`/`check.rs` change needed.
+//! `object_methods.rb` covers nine further Object extensions on a closed
+//! PORO, with both bare calls and explicit receivers; `to_yaml` is supplied
+//! by Psych. `object_methods_control.rb` keeps project arity and typo errors
+//! conclusive. CLI and LSP tests reuse these fixtures with Gemfile + lock.
 
 fn sev(s: itaruby_semantic::Severity) -> &'static str {
     match s {
@@ -56,10 +60,24 @@ fn active_support_core_ext_and_gem_stay_silent() {
     );
 }
 
+#[test]
+fn active_support_object_methods_stay_silent() {
+    let diags = check_fixture("object_methods.rb");
+    assert!(diags.is_empty(), "Object extensions must stay silent: {diags:?}");
+}
+
+#[test]
+fn project_override_and_misspelled_object_method_still_accuse() {
+    let diags = check_fixture("object_methods_control.rb");
+    assert_eq!(diags.len(), 2, "expected arity and missing-method errors: {diags:?}");
+    assert!(diags.iter().any(|d| d.contains("E0102") && d.contains("`present?`")), "{diags:?}");
+    assert!(diags.iter().any(|d| d.contains("E0101") && d.contains("`presentt?`")), "{diags:?}");
+}
+
 /// Negative control -- an invented bare-call name and an invented
 /// explicit-receiver name, on the same closed-project-class shapes as
 /// `silence.rb`, must both still accuse E0101. Proves the allowlist is
-/// narrow (five measured names), not a blanket Kernel/Object
+/// narrow (explicit measured names), not a blanket Kernel/Object
 /// suppressor.
 #[test]
 fn unrelated_calls_still_warn_e0101() {

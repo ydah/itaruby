@@ -46,6 +46,12 @@ found, and the launch bar is winning on both.
   wrong answer never is.
 - **Fail-closed everywhere:** where itaruby cannot prove, it stays silent and
   the gap becomes roadmap — never a diagnostic (binding, 2026-08-24).
+- Curated Object extensions suppress only missing-method verdicts; project
+  definitions still win, including their arity diagnostics (learned
+  2026-10-03, binding). `active_support_core_ext` and the CLI/LSP fixtures
+  in `testdata/o8l_core_ext/` cover ActiveSupport's Object methods and Psych's
+  `to_yaml`, with typo and project-override controls. Keep this in the shared
+  fallback rather than force-opening Object through generated declarations.
 - Conflicting superclass headers are unknown ancestry, not a file-order
   winner (learned 2026-09-22, binding). Compare resolved identities in each
   header's lexical scope; same-base and bare reopenings remain valid.

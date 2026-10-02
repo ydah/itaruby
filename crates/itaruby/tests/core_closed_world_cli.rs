@@ -100,6 +100,26 @@ fn same_probes_go_silent_with_gemfile() {
     let _ = std::fs::remove_dir_all(&dir);
 }
 
+#[test]
+fn active_support_object_methods_stay_silent_with_gemfile_and_lock() {
+    let dir = tmpdir("active-support-object-methods");
+    write(&dir, "Gemfile", "source \"https://rubygems.org\"\ngem \"activesupport\"\n");
+    write(&dir, "Gemfile.lock", "GEM\n  specs:\n    activesupport (8.1.4)\n\nDEPENDENCIES\n  activesupport\n");
+    write(&dir, "report.rb", include_str!("../../../testdata/o8l_core_ext/object_methods.rb"));
+
+    let out = run_check(&dir);
+    assert_eq!(out.status.code(), Some(0), "Object extensions must stay silent: {}", stdout(&out));
+
+    write(&dir, "control.rb", include_str!("../../../testdata/o8l_core_ext/object_methods_control.rb"));
+    let out = run_check(&dir);
+    let text = stdout(&out);
+    assert_eq!(out.status.code(), Some(1), "controls must still fail: {text}");
+    assert!(text.contains("E0102") && text.contains("`present?`"), "{text}");
+    assert!(text.contains("E0101") && text.contains("`presentt?`"), "{text}");
+    assert!(!text.contains("report.rb"), "Object extensions must stay silent: {text}");
+    let _ = std::fs::remove_dir_all(&dir);
+}
+
 /// A `Gemfile.lock` alone is enough to open the world; a `*.gemspec` is
 /// too — one probe each.
 #[test]

@@ -214,6 +214,34 @@ fn pull_diagnostics_reports_full_report_with_one_item() {
     shutdown(&mut client);
 }
 
+#[test]
+fn pull_diagnostics_silences_object_extensions_but_keeps_controls() {
+    let dir = std::env::temp_dir().join(format!("itaruby-pull-object-ext-{}", std::process::id()));
+    std::fs::create_dir_all(&dir).unwrap();
+    let _guard = TempDirGuard(dir.clone());
+    std::fs::write(dir.join("Gemfile"), "gem \"activesupport\"\n").unwrap();
+    std::fs::write(dir.join("Gemfile.lock"), "GEM\n  specs:\n    activesupport (8.1.4)\n").unwrap();
+    let path = dir.join("report.rb");
+    let text = concat!(
+        include_str!("../../../testdata/o8l_core_ext/object_methods.rb"),
+        "\n",
+        include_str!("../../../testdata/o8l_core_ext/object_methods_control.rb"),
+    );
+    std::fs::write(&path, text).unwrap();
+
+    let mut client = LspClient::spawn();
+    init_and_open_root(&mut client, &dir);
+    let uri = file_uri(&path);
+    let resp = pull_diagnostics(&mut client, &uri);
+    shutdown(&mut client);
+
+    assert!(resp.get("error").is_none(), "pull returned an error: {resp:?}");
+    let items = resp["result"]["items"].as_array().expect("items array");
+    assert_eq!(items.len(), 2, "only controls may report diagnostics: {resp:?}");
+    assert!(items.iter().any(|d| d["code"] == "E0102" && d["message"].as_str().unwrap().contains("`present?`")), "{resp:?}");
+    assert!(items.iter().any(|d| d["code"] == "E0101" && d["message"].as_str().unwrap().contains("`presentt?`")), "{resp:?}");
+}
+
 /// (a2) The same wire path carries E0108 with no per-code wiring in the
 /// server: an editor pulling this file sees code `E0108`, severity 1
 /// (Error), and a range covering the offending OPERAND. The snippet is

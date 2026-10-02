@@ -1,7 +1,7 @@
 # Negative control for bead ita-o8l.2 / ita-o8l.3: an invented method name
 # on the SAME closed-project-class shapes as `silence.rb` (bare self-send
 # and explicit receiver falling back to Object) must still accuse E0101 --
-# proves the fix is a narrow five-name allowlist, not a blanket
+# proves the fix is a narrow explicit-name allowlist, not a blanket
 # Kernel/Object suppressor.
 
 class O8lCoreExtControlWidget

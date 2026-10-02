@@ -566,15 +566,14 @@ const TEST_FRAMEWORK_OBJECT_MIXIN_METHODS: &[&str] = &["stubs", "expects", "unst
 /// reopens `Object`, and `gen-core-inventory.rb`'s `core_stdlib_tops`
 /// filter exists specifically to keep a core-namespace reopening OUT of
 /// the pack (wave 9 defect 1 force-opened 41 core namespaces this way
-/// and killed conclusive `E0101` project-wide) — declaring these four
+/// and killed conclusive `E0101` project-wide) — declaring these
 /// names through the pack would reintroduce that exact defect, so they
 /// are hand-curated here instead, in the one place that already exists
 /// for precisely this shape.
 ///
-/// ENTRY RULE (same discipline as `GEM_KERNEL_METHODS`): the name must
-/// have appeared in the round-5/precision-report measurement as a
-/// resolved-`Object`-ancestry call this checker misresolved, and the
-/// gem contributing it must be public. So far: `to_json` (`require
+/// ENTRY RULE (same discipline as `GEM_KERNEL_METHODS`): a reproduced
+/// resolved-`Object`-ancestry false E0101 and a public runtime definition.
+/// Original round-5/precision-report names: `to_json` (`require
 /// "json"` + activesupport's `Object#to_json`/`as_json` — e.g.
 /// `actionpack/.../journey/gtg/transition_table.rb:143`,
 /// `activesupport/test/.../encoding_test.rb:199` — 6 sites), `try`
@@ -586,9 +585,15 @@ const TEST_FRAMEWORK_OBJECT_MIXIN_METHODS: &[&str] = &["stubs", "expects", "unst
 /// or an explicit receiver whose OWN class never defines it, so
 /// resolution genuinely falls through to `Object` — none of the four
 /// names is a project-defined method anywhere in the four public
-/// corpora measured.
-const ACTIVE_SUPPORT_OBJECT_MIXIN_METHODS: &[&str] =
-    &["to_json", "try", "instance_values", "acts_like?"];
+/// corpora measured. The nine additional names reproduce on a closed PORO
+/// with Gemfile + lock (2026-10-03, `testdata/o8l_core_ext/object_methods.rb`).
+/// Eight are defined by `ActiveSupport` 8.1.4's `core_ext/object`; `to_yaml`
+/// is Psych's Object extension, loaded by `require "yaml"` in Rails stacks.
+const ACTIVE_SUPPORT_OBJECT_MIXIN_METHODS: &[&str] = &[
+    "to_json", "try", "instance_values", "acts_like?",
+    "blank?", "present?", "presence", "in?", "as_json", "deep_dup",
+    "to_param", "instance_variable_names", "to_yaml",
+];
 
 /// Is `name` a Kernel/Object/BasicObject INSTANCE method every Ruby
 /// object responds to, closed project class or not (gap 2)? `Object`'s
